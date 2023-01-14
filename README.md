@@ -9,6 +9,7 @@ microCMSで管理しているメディア(画像・ファイル)を取得し、�
 - メディアの取得にあたっては、ベータ版の機能であるマネジメントAPI (https://document.microcms.io/management-api/get-media) を利用しています。
 - 利用するAPIキーには、あらかじめ`メディアの取得`の権限付与が必要です。詳しくはAPIキーのドキュメント (https://document.microcms.io/content-api/x-microcms-api-key) を確認してください。
 - APIキーの秘匿等の考慮はされていないため、取り扱いにはご注意ください。
+- 現在はメディアのみ対象です。今後コンテンツについても実装を検討しています。
 
 ## 利用方法
 1. `go run main.go`を実行します。
