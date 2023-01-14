@@ -183,7 +183,7 @@ func main() {
 		}
 
 		if scanner.Text() == "manual" {
-			fmt.Println("> ドメインを入力してください")
+			fmt.Println("> サービスIDを入力してください")
 			for scanner.Scan() {
 				if scanner.Text() != "" {
 					option.ServiceID = scanner.Text()
