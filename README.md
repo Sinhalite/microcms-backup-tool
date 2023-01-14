@@ -1,4 +1,6 @@
 # microcms-backup-tool
+<img width="640" alt="Screenshot" src="https://user-images.githubusercontent.com/16186206/212473375-8df10b91-27f5-488c-a579-60edf4a59fa3.png">
+
 ## 概要
 microCMSで管理しているメディア(画像・ファイル)を取得し、保存するツールです。
 
