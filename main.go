@@ -31,6 +31,11 @@ type Config struct {
 	APIKey    string `json:"apiKey"`
 }
 
+func (c *Config) SetConfig(serviceId string, apiKey string) {
+	c.ServiceID = serviceId
+	c.APIKey = apiKey
+}
+
 func loadConfig() (*Config, error) {
 	f, err := os.Open("config.json")
 	if err != nil {
@@ -39,7 +44,9 @@ func loadConfig() (*Config, error) {
 	defer f.Close()
 
 	var cfg Config
-	err = json.NewDecoder(f).Decode(&cfg)
+	d := json.NewDecoder(f)
+	d.DisallowUnknownFields()
+	err = d.Decode(&cfg)
 	return &cfg, err
 }
 
@@ -171,14 +178,17 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	option := &Config{}
 
+	var serviceId string
+	var apiKey string
+
 	fmt.Println("> モードを選択してください(auto / manual)")
 	for scanner.Scan() {
 		if scanner.Text() == "auto" {
-			cfg, err := loadConfig()
+			var err error
+			option, err = loadConfig()
 			if err != nil {
 				log.Fatal(err)
 			}
-			option = cfg
 			break
 		}
 
@@ -186,7 +196,7 @@ func main() {
 			fmt.Println("> サービスIDを入力してください")
 			for scanner.Scan() {
 				if scanner.Text() != "" {
-					option.ServiceID = scanner.Text()
+					serviceId = scanner.Text()
 					break
 				}
 			}
@@ -194,10 +204,11 @@ func main() {
 			fmt.Println("> APIキーを入力してください")
 			for scanner.Scan() {
 				if scanner.Text() != "" {
-					option.APIKey = scanner.Text()
+					apiKey = scanner.Text()
 					break
 				}
 			}
+			option.SetConfig(serviceId, apiKey)
 			break
 		}
 	}
