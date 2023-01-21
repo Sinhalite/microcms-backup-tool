@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -31,23 +32,28 @@ func loadConfig() (*Config, error) {
 	return &cfg, err
 }
 
-func main() {
-	scanner := bufio.NewScanner(os.Stdin)
+func getOption(modeFlag string) (*Config, error) {
+	// コマンドライン引数で"-mode=auto"がセットされていたら、対話式のメッセージは表示しない
+	if modeFlag == "auto" {
+		option, err := loadConfig()
+		return option, err
+	}
+
+	// 対話式でオプションをセット
 	option := &Config{}
+	var err error
 
 	var target string
 	var serviceId string
 	var apiKey string
 	var endpoints []string
 
+	scanner := bufio.NewScanner(os.Stdin)
+
 	fmt.Println("> モードを選択してください(auto / manual)")
 	for scanner.Scan() {
 		if scanner.Text() == "auto" {
-			var err error
 			option, err = loadConfig()
-			if err != nil {
-				log.Fatal(err)
-			}
 			break
 		}
 
@@ -99,13 +105,25 @@ func main() {
 			break
 		}
 	}
+	return option, err
+}
+
+func main() {
+	// コマンドライン因数の取得
+	modeFlag := flag.String("mode", "", "mode value")
+	flag.Parse()
+
+	option, err := getOption(*modeFlag)
+	if err != nil {
+		log.Fatal("正常にオプションをセットできませんでした")
+	}
 
 	// バックアップのディレクトリ作成
 	t := time.Now()
 	timeDir := t.Format("2006_01_02_15_04_05")
 	baseDir := "backup/" + option.ServiceID + "/" + timeDir + "/"
 
-	err := os.MkdirAll(baseDir, os.ModePerm)
+	err = os.MkdirAll(baseDir, os.ModePerm)
 	if err != nil {
 		log.Fatal("バックアップディレクトリの作成に失敗しました")
 	}
