@@ -11,6 +11,7 @@ import (
 )
 
 func backupMedia(option Config, baseDir string) {
+	log.Println("メディアのバックアップを開始します")
 	const requestUnit = 50
 	totalCount, err := getTotalCount(option)
 	if err != nil {

@@ -109,6 +109,8 @@ func main() {
 	if err != nil {
 		log.Fatal("バックアップディレクトリの作成に失敗しました")
 	}
+	log.Println("バックアップディレクトリを作成しました")
+	log.Println("バックアップを開始します")
 
 	switch option.Target {
 	case "all":
@@ -121,4 +123,5 @@ func main() {
 	default:
 		log.Fatal("不明なターゲットが選択されました")
 	}
+	log.Println("正常にバックアップが終了しました")
 }

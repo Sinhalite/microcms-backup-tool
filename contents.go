@@ -11,9 +11,13 @@ import (
 )
 
 func backupContents(option Config, baseDir string) {
+	log.Println("コンテンツのバックアップを開始します")
+
 	const requestUnit = 10
 
 	for _, endpoint := range option.Endpoints {
+		log.Printf("%sのバックアップを開始します\n", endpoint)
+
 		totalCount, err := getContentsTotalCount(option, endpoint)
 		if err != nil {
 			log.Println(err)
