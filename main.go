@@ -11,37 +11,37 @@ import (
 	"time"
 )
 
-func (c *Config) SetConfig(target string, serviceId string, apiKey string, endpoints []string) {
+func (c *Config) setConfig(target string, serviceId string, apiKey string, endpoints []string) {
 	c.Target = target
 	c.ServiceID = serviceId
 	c.APIKey = apiKey
 	c.Endpoints = endpoints
 }
 
-func loadConfig() (*Config, error) {
+func (c *Config) loadConfig() error {
 	f, err := os.Open("config.json")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer f.Close()
 
-	var cfg Config
 	d := json.NewDecoder(f)
 	d.DisallowUnknownFields()
-	err = d.Decode(&cfg)
-	return &cfg, err
+	d.Decode(c)
+	return nil
 }
 
-func getOption(modeFlag string) (*Config, error) {
+func initOption(modeFlag string) (*Config, error) {
+	option := &Config{}
+	var err error
+
 	// コマンドライン引数で"-mode=auto"がセットされていたら、対話式のメッセージは表示しない
 	if modeFlag == "auto" {
-		option, err := loadConfig()
+		err := option.loadConfig()
 		return option, err
 	}
 
 	// 対話式でオプションをセット
-	option := &Config{}
-	var err error
 
 	var target string
 	var serviceId string
@@ -53,7 +53,7 @@ func getOption(modeFlag string) (*Config, error) {
 	fmt.Println("> モードを選択してください(auto / manual)")
 	for scanner.Scan() {
 		if scanner.Text() == "auto" {
-			option, err = loadConfig()
+			err = option.loadConfig()
 			break
 		}
 
@@ -101,7 +101,7 @@ func getOption(modeFlag string) (*Config, error) {
 				}
 			}
 
-			option.SetConfig(target, serviceId, apiKey, endpoints)
+			option.setConfig(target, serviceId, apiKey, endpoints)
 			break
 		}
 	}
@@ -113,7 +113,7 @@ func main() {
 	modeFlag := flag.String("mode", "", "mode value")
 	flag.Parse()
 
-	option, err := getOption(*modeFlag)
+	option, err := initOption(*modeFlag)
 	if err != nil {
 		log.Fatal("正常にオプションをセットできませんでした")
 	}
