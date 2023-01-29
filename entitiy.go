@@ -8,17 +8,17 @@ type ContentsAPIResponse struct {
 }
 
 type ManagementAPIMediaResponse struct {
-	Media      []Media
-	TotalCount int
-	Limit      int
-	Offset     int
+	Media      []Media `json:"media"`
+	TotalCount int     `json:"totalCount"`
+	Limit      int     `json:"limit"`
+	Offset     int     `json:"offset"`
 }
 
 type Media struct {
-	Id     string
-	Url    string
-	Width  int
-	Height int
+	Id     string `json:"id"`
+	Url    string `json:"url"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
 }
 
 type Config struct {
