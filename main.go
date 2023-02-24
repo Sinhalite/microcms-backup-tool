@@ -132,12 +132,24 @@ func main() {
 
 	switch option.Target {
 	case "all":
-		backupContents(*option, baseDir)
-		backupMedia(*option, baseDir)
+		err = backupContents(*option, baseDir)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = backupMedia(*option, baseDir)
+		if err != nil {
+			log.Fatal(err)
+		}
 	case "contents":
-		backupContents(*option, baseDir)
+		err = backupContents(*option, baseDir)
+		if err != nil {
+			log.Fatal(err)
+		}
 	case "media":
-		backupMedia(*option, baseDir)
+		err = backupMedia(*option, baseDir)
+		if err != nil {
+			log.Fatal(err)
+		}
 	default:
 		log.Fatal("不明なターゲットが選択されました")
 	}

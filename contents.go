@@ -10,7 +10,7 @@ import (
 	"os"
 )
 
-func backupContents(option Config, baseDir string) {
+func backupContents(option Config, baseDir string) error {
 	log.Println("コンテンツのバックアップを開始します")
 
 	const requestUnit = 10
@@ -20,17 +20,16 @@ func backupContents(option Config, baseDir string) {
 
 		totalCount, err := getContentsTotalCount(option, endpoint)
 		if err != nil {
-			log.Println(err)
-			log.Fatal("コンテンツの合計件数の取得でエラーが発生しました")
+			return fmt.Errorf("コンテンツの合計件数の取得でエラーが発生しました: %w", err)
 		}
 		requiredRequestCount := (totalCount/requestUnit + 1)
 
 		err = saveContents(option, endpoint, requiredRequestCount, requestUnit, baseDir)
 		if err != nil {
-			log.Println(err)
-			log.Fatal("コンテンツの保存でエラーが発生しました")
+			return fmt.Errorf("コンテンツの保存でエラーが発生しました: %w", err)
 		}
 	}
+	return nil
 }
 
 func getContentsTotalCount(option Config, endpoint string) (int, error) {

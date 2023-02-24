@@ -10,26 +10,24 @@ import (
 	"strings"
 )
 
-func backupMedia(option Config, baseDir string) {
+func backupMedia(option Config, baseDir string) error {
 	log.Println("メディアのバックアップを開始します")
 	const requestUnit = 50
 	totalCount, err := getTotalCount(option)
 	if err != nil {
-		log.Println(err)
-		log.Fatal("合計件数の取得でエラーが発生しました")
+		return fmt.Errorf("合計件数の取得でエラーが発生しました: %w", err)
 	}
 	requiredRequestCount := (totalCount/requestUnit + 1)
 
 	mediaAry, err := getMediaAry(option, requiredRequestCount, requestUnit)
 	if err != nil {
-		log.Println(err)
-		log.Fatal("メディア一覧の取得でエラーが発生しました")
+		return fmt.Errorf("メディア一覧の取得でエラーが発生しました: %w", err)
 	}
 	err = saveMedia(mediaAry, option, totalCount, baseDir)
 	if err != nil {
-		log.Println(err)
-		log.Fatal("メディアの保存でエラーが発生しました")
+		return fmt.Errorf("メディアの保存でエラーが発生しました: %w", err)
 	}
+	return nil
 }
 
 func getTotalCount(option Config) (int, error) {
