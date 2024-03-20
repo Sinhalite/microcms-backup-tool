@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 )
@@ -119,6 +120,10 @@ func saveMedia(mediaAry []Media, option Config, totalCount int, baseDir string) 
 
 		ary := strings.Split(media.Url, "/")
 		fileName := ary[len(ary)-1]
+		fileName, err = url.QueryUnescape(fileName)
+		if err != nil {
+			return err
+		}
 		fileDirectory := ary[len(ary)-2]
 
 		// ファイルごとのディレクトリを作成する
