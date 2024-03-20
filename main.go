@@ -11,11 +11,12 @@ import (
 	"time"
 )
 
-func (c *Config) setConfig(target string, serviceId string, apiKey string, endpoints []string) {
+func (c *Config) setConfig(target string, serviceId string, apiKey string, endpoints []string, requestUnit int) {
 	c.Target = target
 	c.ServiceID = serviceId
 	c.APIKey = apiKey
 	c.Endpoints = endpoints
+	c.RequestUnit = requestUnit
 }
 
 func (c *Config) loadConfig() error {
@@ -47,6 +48,7 @@ func initOption(modeFlag string) (*Config, error) {
 	var serviceId string
 	var apiKey string
 	var endpoints []string
+	var requestUnit = 10
 
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -101,7 +103,7 @@ func initOption(modeFlag string) (*Config, error) {
 				}
 			}
 
-			option.setConfig(target, serviceId, apiKey, endpoints)
+			option.setConfig(target, serviceId, apiKey, endpoints, requestUnit)
 			break
 		}
 	}

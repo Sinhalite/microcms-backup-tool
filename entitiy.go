@@ -22,8 +22,9 @@ type Media struct {
 }
 
 type Config struct {
-	Target    string   `json:"target"`
-	ServiceID string   `json:"serviceId"`
-	APIKey    string   `json:"apiKey"`
-	Endpoints []string `json:"endpoints"`
+	Target      string   `json:"target"`
+	ServiceID   string   `json:"serviceId"`
+	APIKey      string   `json:"apiKey"`
+	Endpoints   []string `json:"endpoints"`
+	RequestUnit int      `json:"requestUnit"`
 }

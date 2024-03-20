@@ -13,8 +13,6 @@ import (
 func backupContents(option Config, baseDir string) error {
 	log.Println("コンテンツのバックアップを開始します")
 
-	const requestUnit = 10
-
 	for _, endpoint := range option.Endpoints {
 		log.Printf("%sのバックアップを開始します\n", endpoint)
 
@@ -22,9 +20,9 @@ func backupContents(option Config, baseDir string) error {
 		if err != nil {
 			return fmt.Errorf("コンテンツの合計件数の取得でエラーが発生しました: %w", err)
 		}
-		requiredRequestCount := (totalCount/requestUnit + 1)
+		requiredRequestCount := (totalCount/option.RequestUnit + 1)
 
-		err = saveContents(option, endpoint, requiredRequestCount, requestUnit, baseDir)
+		err = saveContents(option, endpoint, requiredRequestCount, baseDir)
 		if err != nil {
 			return fmt.Errorf("コンテンツの保存でエラーが発生しました: %w", err)
 		}
@@ -65,10 +63,10 @@ func getContentsTotalCount(option Config, endpoint string) (int, error) {
 	return response.TotalCount, err
 }
 
-func saveContents(option Config, endpoint string, requiredRequestCount int, requestUnit int, baseDir string) error {
+func saveContents(option Config, endpoint string, requiredRequestCount int, baseDir string) error {
 	for i := 0; i < requiredRequestCount; i++ {
 		client := new(http.Client)
-		requestURL := fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=%d&offset=%d", option.ServiceID, endpoint, requestUnit, requestUnit*i)
+		requestURL := fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=%d&offset=%d", option.ServiceID, endpoint, option.RequestUnit, option.RequestUnit*i)
 		req, _ := http.NewRequest("GET", requestURL, nil)
 		req.Header.Set("X-MICROCMS-API-KEY", option.APIKey)
 		resp, err := client.Do(req)

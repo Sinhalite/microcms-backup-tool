@@ -66,10 +66,11 @@ func TestBackupContents(t *testing.T) {
 			name: "missing api",
 			args: args{
 				config: &Config{
-					Target:    "contents",
-					ServiceID: "backup-test",
-					APIKey:    "5Nw9AZH3BRRyOZS73ohPksRnn5sI49BMx05C",
-					Endpoints: []string{"missing"},
+					Target:      "contents",
+					ServiceID:   "backup-test",
+					APIKey:      "5Nw9AZH3BRRyOZS73ohPksRnn5sI49BMx05C",
+					Endpoints:   []string{"missing"},
+					RequestUnit: 10,
 				},
 				baseDir: "backup/test/",
 			},
@@ -79,10 +80,11 @@ func TestBackupContents(t *testing.T) {
 			name: "normal",
 			args: args{
 				config: &Config{
-					Target:    "contents",
-					ServiceID: "backup-test",
-					APIKey:    "5Nw9AZH3BRRyOZS73ohPksRnn5sI49BMx05C",
-					Endpoints: []string{"test", "test2"},
+					Target:      "contents",
+					ServiceID:   "backup-test",
+					APIKey:      "5Nw9AZH3BRRyOZS73ohPksRnn5sI49BMx05C",
+					Endpoints:   []string{"test", "test2"},
+					RequestUnit: 10,
 				},
 				baseDir: "backup/test/",
 			},
