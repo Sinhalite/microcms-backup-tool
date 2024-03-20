@@ -12,7 +12,7 @@ import (
 
 func backupMedia(option Config, baseDir string) error {
 	log.Println("メディアのバックアップを開始します")
-	const requestUnit = 50
+	const requestUnit = 10
 	totalCount, err := getTotalCount(option)
 	if err != nil {
 		return fmt.Errorf("合計件数の取得でエラーが発生しました: %w", err)
@@ -33,7 +33,7 @@ func backupMedia(option Config, baseDir string) error {
 func getTotalCount(option Config) (int, error) {
 	req, _ := http.NewRequest(
 		"GET",
-		fmt.Sprintf("https://%s.microcms-management.io/api/v1/media?limit=0", option.ServiceID),
+		fmt.Sprintf("https://%s.microcms-management.io/api/v2/media?limit=0", option.ServiceID),
 		nil)
 	req.Header.Set("X-MICROCMS-API-KEY", option.APIKey)
 
@@ -65,12 +65,13 @@ func getTotalCount(option Config) (int, error) {
 
 func getMediaAry(option Config, requiredRequestCount int, requestUnit int) ([]Media, error) {
 	var ary []Media
+	var token string
 
 	for i := 0; i < requiredRequestCount; i++ {
 		client := new(http.Client)
 		req, _ := http.NewRequest(
 			"GET",
-			fmt.Sprintf("https://%s.microcms-management.io/api/v1/media?limit=%d&offset=%d", option.ServiceID, requestUnit, requestUnit*i),
+			fmt.Sprintf("https://%s.microcms-management.io/api/v2/media?limit=%d&token=%s", option.ServiceID, requestUnit, token),
 			nil,
 		)
 		req.Header.Set("X-MICROCMS-API-KEY", option.APIKey)
@@ -95,6 +96,7 @@ func getMediaAry(option Config, requiredRequestCount int, requestUnit int) ([]Me
 		}
 
 		ary = append(ary, response.Media...)
+		token = response.Token
 	}
 
 	return ary, nil

@@ -10,8 +10,7 @@ type ContentsAPIResponse struct {
 type ManagementAPIMediaResponse struct {
 	Media      []Media `json:"media"`
 	TotalCount int     `json:"totalCount"`
-	Limit      int     `json:"limit"`
-	Offset     int     `json:"offset"`
+	Token      string  `json:"token"`
 }
 
 type Media struct {
