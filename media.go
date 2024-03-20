@@ -12,7 +12,7 @@ import (
 
 func backupMedia(option Config, baseDir string) error {
 	log.Println("メディアのバックアップを開始します")
-	const requestUnit = 10
+	const requestUnit = 50
 	totalCount, err := getTotalCount(option)
 	if err != nil {
 		return fmt.Errorf("合計件数の取得でエラーが発生しました: %w", err)
