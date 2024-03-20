@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -20,6 +21,9 @@ func (c *Config) setConfig(target string, serviceId string, apiKey string, endpo
 }
 
 func (c *Config) loadConfig() error {
+	// デフォルト値を設定
+	c.RequestUnit = 10
+
 	f, err := os.Open("config.json")
 	if err != nil {
 		return err
@@ -48,7 +52,7 @@ func initOption(modeFlag string) (*Config, error) {
 	var serviceId string
 	var apiKey string
 	var endpoints []string
-	var requestUnit = 10
+	var requestUnit = 100
 
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -62,17 +66,11 @@ func initOption(modeFlag string) (*Config, error) {
 		if scanner.Text() == "manual" {
 			fmt.Println("> 保存する対象を選択してください(all/contents/media)")
 			for scanner.Scan() {
-				if scanner.Text() != "all" {
+				if scanner.Text() == "all" || scanner.Text() == "contents" || scanner.Text() == "media" {
 					target = scanner.Text()
 					break
-				}
-				if scanner.Text() != "contents" {
-					target = scanner.Text()
-					break
-				}
-				if scanner.Text() != "media" {
-					target = scanner.Text()
-					break
+				} else {
+					fmt.Println("入力値に誤りがあります。再入力してください。")
 				}
 			}
 
@@ -99,6 +97,30 @@ func initOption(modeFlag string) (*Config, error) {
 						endpointsStr := scanner.Text()
 						endpoints = strings.Split(endpointsStr, ",")
 						break
+					}
+				}
+
+				fmt.Println("> コンテンツの1回あたりの取得件数（デフォルト100件）を調整しますか？(No/Yes)")
+				for scanner.Scan() {
+					if scanner.Text() == "Yes" {
+						fmt.Println("> 取得件数を数値で入力してください")
+						for scanner.Scan() {
+							if num, _ := strconv.Atoi(scanner.Text()); num > 100 {
+								fmt.Println(">100件以下で入力してください")
+							} else if len(scanner.Text()) > 0 {
+								num, err := strconv.Atoi(scanner.Text())
+								if err != nil {
+									return nil, err
+								}
+								requestUnit = num
+								break
+							}
+						}
+						break
+					} else if scanner.Text() == "No" {
+						break
+					} else {
+						fmt.Println("> 正しい選択肢を入力してください。")
 					}
 				}
 			}
