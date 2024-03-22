@@ -27,3 +27,7 @@ type Config struct {
 	Endpoints   []string `json:"endpoints"`
 	RequestUnit int      `json:"requestUnit"`
 }
+
+type Client struct {
+	Config *Config
+}

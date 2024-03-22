@@ -42,7 +42,10 @@ func TestBackupMedia(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := backupMedia(*tt.args.config, tt.args.baseDir)
+			client := &Client{}
+			client.Config = tt.args.config
+
+			err := client.backupMedia(tt.args.baseDir)
 			got := err == nil
 			if got != tt.want {
 				t.Errorf("backupMedia() = %v, want %v", got, tt.want)
@@ -93,7 +96,10 @@ func TestBackupContents(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := backupContents(*tt.args.config, tt.args.baseDir)
+			client := &Client{}
+			client.Config = tt.args.config
+
+			err := client.backupContents(tt.args.baseDir)
 			got := err == nil
 			if got != tt.want {
 				t.Errorf("backupContents() = %v, want %v", got, tt.want)

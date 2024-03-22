@@ -10,19 +10,19 @@ import (
 	"os"
 )
 
-func backupContents(option Config, baseDir string) error {
+func (c *Client) backupContents(baseDir string) error {
 	log.Println("コンテンツのバックアップを開始します")
 
-	for _, endpoint := range option.Endpoints {
+	for _, endpoint := range c.Config.Endpoints {
 		log.Printf("%sのバックアップを開始します\n", endpoint)
 
-		totalCount, err := getContentsTotalCount(option, endpoint)
+		totalCount, err := c.getContentsTotalCount(endpoint)
 		if err != nil {
 			return fmt.Errorf("コンテンツの合計件数の取得でエラーが発生しました: %w", err)
 		}
-		requiredRequestCount := (totalCount/option.RequestUnit + 1)
+		requiredRequestCount := (totalCount/c.Config.RequestUnit + 1)
 
-		err = saveContents(option, endpoint, requiredRequestCount, baseDir)
+		err = c.saveContents(endpoint, requiredRequestCount, baseDir)
 		if err != nil {
 			return fmt.Errorf("コンテンツの保存でエラーが発生しました: %w", err)
 		}
@@ -30,12 +30,12 @@ func backupContents(option Config, baseDir string) error {
 	return nil
 }
 
-func getContentsTotalCount(option Config, endpoint string) (int, error) {
+func (c *Client) getContentsTotalCount(endpoint string) (int, error) {
 	req, _ := http.NewRequest(
 		"GET",
-		fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=0", option.ServiceID, endpoint),
+		fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=0", c.Config.ServiceID, endpoint),
 		nil)
-	req.Header.Set("X-MICROCMS-API-KEY", option.APIKey)
+	req.Header.Set("X-MICROCMS-API-KEY", c.Config.APIKey)
 
 	client := new(http.Client)
 	resp, err := client.Do(req)
@@ -63,12 +63,12 @@ func getContentsTotalCount(option Config, endpoint string) (int, error) {
 	return response.TotalCount, err
 }
 
-func saveContents(option Config, endpoint string, requiredRequestCount int, baseDir string) error {
+func (c *Client) saveContents(endpoint string, requiredRequestCount int, baseDir string) error {
 	for i := 0; i < requiredRequestCount; i++ {
 		client := new(http.Client)
-		requestURL := fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=%d&offset=%d", option.ServiceID, endpoint, option.RequestUnit, option.RequestUnit*i)
+		requestURL := fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=%d&offset=%d", c.Config.ServiceID, endpoint, c.Config.RequestUnit, c.Config.RequestUnit*i)
 		req, _ := http.NewRequest("GET", requestURL, nil)
-		req.Header.Set("X-MICROCMS-API-KEY", option.APIKey)
+		req.Header.Set("X-MICROCMS-API-KEY", c.Config.APIKey)
 		resp, err := client.Do(req)
 		if err != nil {
 			return err

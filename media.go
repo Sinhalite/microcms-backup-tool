@@ -11,32 +11,32 @@ import (
 	"strings"
 )
 
-func backupMedia(option Config, baseDir string) error {
+func (c *Client) backupMedia(baseDir string) error {
 	log.Println("メディアのバックアップを開始します")
 	const requestUnit = 50
-	totalCount, err := getTotalCount(option)
+	totalCount, err := c.getTotalCount()
 	if err != nil {
 		return fmt.Errorf("合計件数の取得でエラーが発生しました: %w", err)
 	}
 	requiredRequestCount := (totalCount/requestUnit + 1)
 
-	mediaAry, err := getMediaAry(option, requiredRequestCount, requestUnit)
+	mediaAry, err := c.getMediaAry(requiredRequestCount, requestUnit)
 	if err != nil {
 		return fmt.Errorf("メディア一覧の取得でエラーが発生しました: %w", err)
 	}
-	err = saveMedia(mediaAry, option, totalCount, baseDir)
+	err = c.saveMedia(mediaAry, totalCount, baseDir)
 	if err != nil {
 		return fmt.Errorf("メディアの保存でエラーが発生しました: %w", err)
 	}
 	return nil
 }
 
-func getTotalCount(option Config) (int, error) {
+func (c *Client) getTotalCount() (int, error) {
 	req, _ := http.NewRequest(
 		"GET",
-		fmt.Sprintf("https://%s.microcms-management.io/api/v2/media?limit=0", option.ServiceID),
+		fmt.Sprintf("https://%s.microcms-management.io/api/v2/media?limit=0", c.Config.ServiceID),
 		nil)
-	req.Header.Set("X-MICROCMS-API-KEY", option.APIKey)
+	req.Header.Set("X-MICROCMS-API-KEY", c.Config.APIKey)
 
 	client := new(http.Client)
 	resp, err := client.Do(req)
@@ -64,7 +64,7 @@ func getTotalCount(option Config) (int, error) {
 	return response.TotalCount, err
 }
 
-func getMediaAry(option Config, requiredRequestCount int, requestUnit int) ([]Media, error) {
+func (c *Client) getMediaAry(requiredRequestCount int, requestUnit int) ([]Media, error) {
 	var ary []Media
 	var token string
 
@@ -72,10 +72,10 @@ func getMediaAry(option Config, requiredRequestCount int, requestUnit int) ([]Me
 		client := new(http.Client)
 		req, _ := http.NewRequest(
 			"GET",
-			fmt.Sprintf("https://%s.microcms-management.io/api/v2/media?limit=%d&token=%s", option.ServiceID, requestUnit, token),
+			fmt.Sprintf("https://%s.microcms-management.io/api/v2/media?limit=%d&token=%s", c.Config.ServiceID, requestUnit, token),
 			nil,
 		)
-		req.Header.Set("X-MICROCMS-API-KEY", option.APIKey)
+		req.Header.Set("X-MICROCMS-API-KEY", c.Config.APIKey)
 		resp, err := client.Do(req)
 		if err != nil {
 			return nil, err
@@ -103,11 +103,11 @@ func getMediaAry(option Config, requiredRequestCount int, requestUnit int) ([]Me
 	return ary, nil
 }
 
-func saveMedia(mediaAry []Media, option Config, totalCount int, baseDir string) error {
+func (c *Client) saveMedia(mediaAry []Media, totalCount int, baseDir string) error {
 	for i, media := range mediaAry {
 		client := new(http.Client)
 		req, _ := http.NewRequest("GET", media.Url, nil)
-		req.Header.Set("X-MICROCMS-API-KEY", option.APIKey)
+		req.Header.Set("X-MICROCMS-API-KEY", c.Config.APIKey)
 
 		resp, err := client.Do(req)
 		if err != nil {

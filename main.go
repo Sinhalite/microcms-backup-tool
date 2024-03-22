@@ -133,11 +133,13 @@ func initOption(modeFlag string) (*Config, error) {
 }
 
 func main() {
+	client := &Client{}
 	// コマンドライン因数の取得
 	modeFlag := flag.String("mode", "", "mode value")
 	flag.Parse()
 
-	option, err := initOption(*modeFlag)
+	var err error
+	client.Config, err = initOption(*modeFlag)
 	if err != nil {
 		log.Fatal("正常にオプションをセットできませんでした")
 	}
@@ -145,7 +147,7 @@ func main() {
 	// バックアップのディレクトリ作成
 	t := time.Now()
 	timeDir := t.Format("2006_01_02_15_04_05")
-	baseDir := "backup/" + option.ServiceID + "/" + timeDir + "/"
+	baseDir := "backup/" + client.Config.ServiceID + "/" + timeDir + "/"
 
 	err = os.MkdirAll(baseDir, os.ModePerm)
 	if err != nil {
@@ -154,23 +156,23 @@ func main() {
 	log.Println("バックアップディレクトリを作成しました")
 	log.Println("バックアップを開始します")
 
-	switch option.Target {
+	switch client.Config.Target {
 	case "all":
-		err = backupContents(*option, baseDir)
+		err = client.backupContents(baseDir)
 		if err != nil {
 			log.Fatal(err)
 		}
-		err = backupMedia(*option, baseDir)
+		err = client.backupMedia(baseDir)
 		if err != nil {
 			log.Fatal(err)
 		}
 	case "contents":
-		err = backupContents(*option, baseDir)
+		err = client.backupContents(baseDir)
 		if err != nil {
 			log.Fatal(err)
 		}
 	case "media":
-		err = backupMedia(*option, baseDir)
+		err = client.backupMedia(baseDir)
 		if err != nil {
 			log.Fatal(err)
 		}
