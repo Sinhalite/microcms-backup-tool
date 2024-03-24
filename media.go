@@ -105,6 +105,9 @@ func (c *Client) getMediaAry(requiredRequestCount int, requestUnit int) ([]Media
 
 func (c *Client) saveMedia(mediaAry []Media, totalCount int, baseDir string) error {
 	for i, media := range mediaAry {
+		// 進捗状況の表示
+		fmt.Printf("[%d / %d] %s\n", i+1, totalCount, media.Url)
+
 		client := new(http.Client)
 		req, _ := http.NewRequest("GET", media.Url, nil)
 		req.Header.Set("X-MICROCMS-API-KEY", c.Config.APIKey)
@@ -144,9 +147,6 @@ func (c *Client) saveMedia(mediaAry []Media, totalCount int, baseDir string) err
 		if err != nil {
 			return err
 		}
-
-		// 進捗状況の表示
-		fmt.Printf("[%d / %d] %s\n", i+1, totalCount, media.Url)
 	}
 	return nil
 }

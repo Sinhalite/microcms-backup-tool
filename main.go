@@ -12,17 +12,9 @@ import (
 	"time"
 )
 
-func (c *Config) setConfig(target string, serviceId string, apiKey string, endpoints []string, requestUnit int) {
-	c.Target = target
-	c.ServiceID = serviceId
-	c.APIKey = apiKey
-	c.Endpoints = endpoints
-	c.RequestUnit = requestUnit
-}
-
-func (c *Config) loadConfig() error {
+func (c *Client) loadConfig() error {
 	// デフォルト値を設定
-	c.RequestUnit = 10
+	c.Config.RequestUnit = 10
 
 	f, err := os.Open("config.json")
 	if err != nil {
@@ -32,22 +24,19 @@ func (c *Config) loadConfig() error {
 
 	d := json.NewDecoder(f)
 	d.DisallowUnknownFields()
-	d.Decode(c)
+	d.Decode(c.Config)
 	return nil
 }
 
-func initOption(modeFlag string) (*Config, error) {
-	option := &Config{}
+func (c *Client) initOption(modeFlag string) error {
 	var err error
-
 	// コマンドライン引数で"-mode=auto"がセットされていたら、対話式のメッセージは表示しない
 	if modeFlag == "auto" {
-		err := option.loadConfig()
-		return option, err
+		err := c.loadConfig()
+		return err
 	}
 
 	// 対話式でオプションをセット
-
 	var target string
 	var serviceId string
 	var apiKey string
@@ -59,7 +48,7 @@ func initOption(modeFlag string) (*Config, error) {
 	fmt.Println("> モードを選択してください(auto / manual)")
 	for scanner.Scan() {
 		if scanner.Text() == "auto" {
-			err = option.loadConfig()
+			err = c.loadConfig()
 			break
 		}
 
@@ -110,7 +99,7 @@ func initOption(modeFlag string) (*Config, error) {
 							} else if len(scanner.Text()) > 0 {
 								num, err := strconv.Atoi(scanner.Text())
 								if err != nil {
-									return nil, err
+									return err
 								}
 								requestUnit = num
 								break
@@ -125,21 +114,27 @@ func initOption(modeFlag string) (*Config, error) {
 				}
 			}
 
-			option.setConfig(target, serviceId, apiKey, endpoints, requestUnit)
+			c.Config = &Config{
+				Target:      target,
+				ServiceID:   serviceId,
+				APIKey:      apiKey,
+				Endpoints:   endpoints,
+				RequestUnit: requestUnit,
+			}
 			break
 		}
 	}
-	return option, err
+	return err
 }
 
 func main() {
-	client := &Client{}
-	// コマンドライン因数の取得
+	client := &Client{&Config{}}
+
+	// コマンドライン引数の取得
 	modeFlag := flag.String("mode", "", "mode value")
 	flag.Parse()
 
-	var err error
-	client.Config, err = initOption(*modeFlag)
+	err := client.initOption(*modeFlag)
 	if err != nil {
 		log.Fatal("正常にオプションをセットできませんでした")
 	}
