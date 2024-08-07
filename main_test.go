@@ -2,11 +2,13 @@ package main
 
 import (
 	"testing"
+
+	"github.com/Sinhalite/microcms-backup-tool/client"
 )
 
 func TestBackupMedia(t *testing.T) {
 	type args struct {
-		config  *Config
+		config  *client.Config
 		baseDir string
 	}
 
@@ -18,7 +20,7 @@ func TestBackupMedia(t *testing.T) {
 		{
 			name: "api key incorrect",
 			args: args{
-				config: &Config{
+				config: &client.Config{
 					Target:    "media",
 					ServiceID: "backup-test",
 					APIKey:    "incorrectkey",
@@ -30,7 +32,7 @@ func TestBackupMedia(t *testing.T) {
 		{
 			name: "normal",
 			args: args{
-				config: &Config{
+				config: &client.Config{
 					Target:    "media",
 					ServiceID: "backup-test",
 					APIKey:    "5Nw9AZH3BRRyOZS73ohPksRnn5sI49BMx05C",
@@ -42,10 +44,10 @@ func TestBackupMedia(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := &Client{}
+			client := &client.Client{}
 			client.Config = tt.args.config
 
-			err := client.backupMedia(tt.args.baseDir)
+			err := client.BackupMedia(tt.args.baseDir)
 			got := err == nil
 			if got != tt.want {
 				t.Errorf("backupMedia() = %v, want %v", got, tt.want)
@@ -56,7 +58,7 @@ func TestBackupMedia(t *testing.T) {
 
 func TestBackupContents(t *testing.T) {
 	type args struct {
-		config  *Config
+		config  *client.Config
 		baseDir string
 	}
 
@@ -68,7 +70,7 @@ func TestBackupContents(t *testing.T) {
 		{
 			name: "missing api",
 			args: args{
-				config: &Config{
+				config: &client.Config{
 					Target:      "contents",
 					ServiceID:   "backup-test",
 					APIKey:      "5Nw9AZH3BRRyOZS73ohPksRnn5sI49BMx05C",
@@ -82,7 +84,7 @@ func TestBackupContents(t *testing.T) {
 		{
 			name: "normal",
 			args: args{
-				config: &Config{
+				config: &client.Config{
 					Target:      "contents",
 					ServiceID:   "backup-test",
 					APIKey:      "5Nw9AZH3BRRyOZS73ohPksRnn5sI49BMx05C",
@@ -96,10 +98,10 @@ func TestBackupContents(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := &Client{}
+			client := &client.Client{}
 			client.Config = tt.args.config
 
-			err := client.backupContents(tt.args.baseDir)
+			err := client.BackupContents(tt.args.baseDir)
 			got := err == nil
 			if got != tt.want {
 				t.Errorf("backupContents() = %v, want %v", got, tt.want)

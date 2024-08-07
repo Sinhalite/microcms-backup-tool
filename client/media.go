@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func (c *Client) backupMedia(baseDir string) error {
+func (c Client) BackupMedia(baseDir string) error {
 	log.Println("メディアのバックアップを開始します")
 	const requestUnit = 50
 	totalCount, err := c.getTotalCount()
@@ -20,7 +20,7 @@ func (c *Client) backupMedia(baseDir string) error {
 	}
 	requiredRequestCount := (totalCount/requestUnit + 1)
 
-	mediaAry, err := c.getMediaAry(requiredRequestCount, requestUnit)
+	mediaAry, err := c.getAllMedia(requiredRequestCount, requestUnit)
 	if err != nil {
 		return fmt.Errorf("メディア一覧の取得でエラーが発生しました: %w", err)
 	}
@@ -31,7 +31,7 @@ func (c *Client) backupMedia(baseDir string) error {
 	return nil
 }
 
-func (c *Client) getTotalCount() (int, error) {
+func (c Client) getTotalCount() (int, error) {
 	req, _ := http.NewRequest(
 		"GET",
 		fmt.Sprintf("https://%s.microcms-management.io/api/v2/media?limit=0", c.Config.ServiceID),
@@ -64,7 +64,7 @@ func (c *Client) getTotalCount() (int, error) {
 	return response.TotalCount, err
 }
 
-func (c *Client) getMediaAry(requiredRequestCount int, requestUnit int) ([]Media, error) {
+func (c Client) getAllMedia(requiredRequestCount int, requestUnit int) ([]Media, error) {
 	var ary []Media
 	var token string
 
@@ -103,8 +103,8 @@ func (c *Client) getMediaAry(requiredRequestCount int, requestUnit int) ([]Media
 	return ary, nil
 }
 
-func (c *Client) saveMedia(mediaAry []Media, totalCount int, baseDir string) error {
-	for i, media := range mediaAry {
+func (c Client) saveMedia(medias []Media, totalCount int, baseDir string) error {
+	for i, media := range medias {
 		// 進捗状況の表示
 		fmt.Printf("[%d / %d] %s\n", i+1, totalCount, media.Url)
 

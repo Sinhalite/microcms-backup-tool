@@ -1,4 +1,4 @@
-package main
+package client
 
 type ContentsAPIResponse struct {
 	Contents   []any `json:"contents"`
@@ -21,11 +21,14 @@ type Media struct {
 }
 
 type Config struct {
-	Target      string   `json:"target"`
-	ServiceID   string   `json:"serviceId"`
-	APIKey      string   `json:"apiKey"`
-	Endpoints   []string `json:"endpoints"`
-	RequestUnit int      `json:"requestUnit"`
+	Target               string   `json:"target"`
+	ServiceID            string   `json:"serviceId"`
+	APIKey               string   `json:"apiKey"`
+	ManagementAPIKey     string   `json:"managementAPIKey"`
+	DraftAndClosedAPIKey string   `json:"draftAndClosedAPIKey"`
+	Endpoints            []string `json:"endpoints"`
+	RequestUnit          int      `json:"requestUnit"`
+	ClassifyByStatus     bool     `json:"classifyByStatus"`
 }
 
 type Client struct {
