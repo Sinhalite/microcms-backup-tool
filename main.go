@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"log"
 
 	"github.com/Sinhalite/microcms-backup-tool/client"
@@ -9,12 +8,7 @@ import (
 
 func main() {
 	client := &client.Client{Config: &client.Config{}}
-
-	// コマンドライン引数の取得
-	modeFlag := flag.String("mode", "", "mode value")
-	flag.Parse()
-
-	err := client.InitOption(*modeFlag)
+	err := client.LoadConfig()
 	if err != nil {
 		log.Fatal("正常にオプションをセットできませんでした")
 	}

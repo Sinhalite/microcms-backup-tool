@@ -20,7 +20,7 @@ func (c Client) BackupContents(baseDir string) error {
 		if c.Config.ClassifyByStatus {
 			fmt.Println("コンテンツの処理を開始しました")
 			// 全コンテンツの合計件数を取得
-			allCotentsCount, err := c.getContentsTotalCount(endpoint, c.Config.DraftAndClosedAPIKey)
+			allCotentsCount, err := c.getContentsTotalCount(endpoint, c.Config.GetAllStatusContentsAPIKey)
 			if err != nil {
 				return fmt.Errorf("全コンテンツの合計件数の取得でエラーが発生しました: %w", err)
 			}
@@ -35,13 +35,13 @@ func (c Client) BackupContents(baseDir string) error {
 			}
 		} else {
 			// 2:ステータスごとの分類を行わない場合
-			totalCount, err := c.getContentsTotalCount(endpoint, c.Config.APIKey)
+			totalCount, err := c.getContentsTotalCount(endpoint, c.Config.GetPublishContentsAPIKey)
 			if err != nil {
 				return fmt.Errorf("コンテンツの合計件数の取得でエラーが発生しました: %w", err)
 			}
 			requiredRequestCount := (totalCount/c.Config.RequestUnit + 1)
 
-			err = c.saveContents(endpoint, requiredRequestCount, baseDir, c.Config.APIKey, "PUBLISH")
+			err = c.saveContents(endpoint, requiredRequestCount, baseDir, c.Config.GetPublishContentsAPIKey, "PUBLISH")
 			if err != nil {
 				return fmt.Errorf("コンテンツの保存でエラーが発生しました: %w", err)
 			}
@@ -168,7 +168,7 @@ func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int
 		client := new(http.Client)
 		requestURL := fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=%d&offset=%d", c.Config.ServiceID, endpoint, c.Config.RequestUnit, c.Config.RequestUnit*i)
 		req, _ := http.NewRequest("GET", requestURL, nil)
-		req.Header.Set("X-MICROCMS-API-KEY", c.Config.DraftAndClosedAPIKey)
+		req.Header.Set("X-MICROCMS-API-KEY", c.Config.GetAllStatusContentsAPIKey)
 		resp, err := client.Do(req)
 		if err != nil {
 			return err
@@ -181,7 +181,7 @@ func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int
 		// マネジメントAPIから取得
 		mRequestURL := fmt.Sprintf("https://%s.microcms-management.io/api/v1/contents/%s?limit=%d&offset=%d", c.Config.ServiceID, endpoint, c.Config.RequestUnit, c.Config.RequestUnit*i)
 		mReq, _ := http.NewRequest("GET", mRequestURL, nil)
-		mReq.Header.Set("X-MICROCMS-API-KEY", c.Config.ManagementAPIKey)
+		mReq.Header.Set("X-MICROCMS-API-KEY", c.Config.GetContentsMetaDataAPIKey)
 		mResp, err := client.Do(mReq)
 		if err != nil {
 			return err
@@ -244,7 +244,7 @@ func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int
 
 				// 2:公開中のデータを取得、保存
 				// 公開中のデータを取得するたびに、「下書き全取得」が付与されていないAPIキーを利用する
-				publishItem, err := c.getContent(endpoint, c.Config.APIKey, id)
+				publishItem, err := c.getContent(endpoint, c.Config.GetPublishContentsAPIKey, id)
 				if err != nil {
 					log.Fatalf("公開中かつ下書き中コンテンツにおいて、公開中のコンテンツの取得に失敗しました: %v", err)
 				}

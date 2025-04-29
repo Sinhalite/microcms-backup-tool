@@ -36,7 +36,7 @@ func (c Client) getTotalCount() (int, error) {
 		"GET",
 		fmt.Sprintf("https://%s.microcms-management.io/api/v2/media?limit=0", c.Config.ServiceID),
 		nil)
-	req.Header.Set("X-MICROCMS-API-KEY", c.Config.APIKey)
+	req.Header.Set("X-MICROCMS-API-KEY", c.Config.GetMediaAPIKey)
 
 	client := new(http.Client)
 	resp, err := client.Do(req)
@@ -75,7 +75,7 @@ func (c Client) getAllMedia(requiredRequestCount int, requestUnit int) ([]Media,
 			fmt.Sprintf("https://%s.microcms-management.io/api/v2/media?limit=%d&token=%s", c.Config.ServiceID, requestUnit, token),
 			nil,
 		)
-		req.Header.Set("X-MICROCMS-API-KEY", c.Config.APIKey)
+		req.Header.Set("X-MICROCMS-API-KEY", c.Config.GetMediaAPIKey)
 		resp, err := client.Do(req)
 		if err != nil {
 			return nil, err
@@ -110,7 +110,7 @@ func (c Client) saveMedia(medias []Media, totalCount int, baseDir string) error 
 
 		client := new(http.Client)
 		req, _ := http.NewRequest("GET", media.Url, nil)
-		req.Header.Set("X-MICROCMS-API-KEY", c.Config.APIKey)
+		req.Header.Set("X-MICROCMS-API-KEY", c.Config.GetMediaAPIKey)
 
 		resp, err := client.Do(req)
 		if err != nil {
