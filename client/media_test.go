@@ -19,9 +19,11 @@ func TestBackupMedia(t *testing.T) {
 			name: "api key incorrect",
 			args: args{
 				config: &Config{
-					Target:         "media",
-					ServiceID:      "backup-test",
-					GetMediaAPIKey: "incorrectkey",
+					Target:    "media",
+					ServiceID: "backup-test",
+					Media: MediaConfig{
+						APIKey: "incorrectkey",
+					},
 				},
 				baseDir: "../backup/test/",
 			},
@@ -31,9 +33,11 @@ func TestBackupMedia(t *testing.T) {
 			name: "normal",
 			args: args{
 				config: &Config{
-					Target:         "media",
-					ServiceID:      "backup-test",
-					GetMediaAPIKey: "5Nw9AZH3BRRyOZS73ohPksRnn5sI49BMx05C",
+					Target:    "media",
+					ServiceID: "backup-test",
+					Media: MediaConfig{
+						APIKey: "5Nw9AZH3BRRyOZS73ohPksRnn5sI49BMx05C",
+					},
 				},
 				baseDir: "../backup/test/",
 			},

@@ -4,21 +4,20 @@
 
 ## 概要
 
-microCMS で管理しているコンテンツとメディア(画像・ファイル)を取得し、保存するツールです。
+microCMS で管理しているコンテンツとメディア(画像・ファイル)を取得し、保存するツールです。コンテンツはステータス（公開中、下書き、公開終了）ごとに分類して保存することができます。
 
 ## 注意事項
 
 - 非公式ツールです。利用にあたっては、自己責任にてお願いいたします。
 - メディアの取得にあたっては、ベータ版の機能であるマネジメント API (https://document.microcms.io/management-api/get-media) を利用しています。
-- 利用する API キーには、あらかじめ`GET`、`メディアの取得`の権限付与が必要です。詳しくは API キーのドキュメント (https://document.microcms.io/content-api/x-microcms-api-key) を確認してください。
+- 利用する API キーには、あらかじめ適切な権限付与が必要です。詳しくは API キーのドキュメント (https://document.microcms.io/content-api/x-microcms-api-key) を確認してください。
 - API キーの秘匿等の考慮はされていないため、取り扱いにはご注意ください。
 
 ## 利用方法
 
 1. ルートディレクトリにて、`go run .`を実行します。
-2. `> モードを選択してください(auto / manual)`と表示されるので、`auto`もしくは`manual`を入力します。
 
-### auto モードを利用する場合
+## 設定ファイル
 
 あらかじめルートディレクトリに、`config.json`を作成し、必要情報を設定してください。
 
@@ -26,9 +25,17 @@ microCMS で管理しているコンテンツとメディア(画像・ファイ�
 {
   "target": "all",
   "serviceId": "xxxxxxxxxx",
-  "apiKey": "xxxxxxxxxxxxxxxxxxxxxxxx",
-  "endpoints": ["hoge", "fuga"],
-  "requestUnit": 100
+  "contents": {
+    "endpoints": ["hoge", "fuga"],
+    "requestUnit": 100,
+    "classifyByStatus": true,
+    "getPublishContentsAPIKey": "xxxxxxxxxxxxxxxxxxxxxxxx",
+    "getAllStatusContentsAPIKey": "xxxxxxxxxxxxxxxxxxxxxxxx",
+    "getContentsMetaDataAPIKey": "xxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  "media": {
+    "getMediaAPIKey": "xxxxxxxxxxxxxxxxxxxxxxxx"
+  }
 }
 ```
 
@@ -40,12 +47,31 @@ microCMS で管理しているコンテンツとメディア(画像・ファイ�
 - `contents` : コンテンツのみ
 - `media` : メディアのみ
 
-### manual モードを利用する場合
+#### APIキーの説明
 
-対話モードにて、必要な項目を聞かれるので、それぞれ必要な値を入力します。
+`contents.getPublishContentsAPIKey`
+- 公開中のみのコンテンツのGET権限を付与してください
+- 公開中コンテンツの取得に使用
 
-3. `backup`フォルダの中に、ファイルが保存されます。
+`contents.getAllStatusContentsAPIKey`
+- 公開中、下書き、公開終了のコンテンツのGET権限を付与してください
+- 全ステータスのコンテンツ取得に使用
 
-## その他
+`contents.getContentsMetaDataAPIKey`
+- コンテンツのメタデータのGET権限を付与してください
+- コンテンツのステータス情報取得に使用
 
-- `go run . -mode=auto`として実行すると、対話式メッセージを出さずに自動で処理を行うことができます。
+`media.getMediaAPIKey`
+- メディアのGET権限を付与してください
+- メディアファイルの取得に使用
+
+#### コンテンツのステータス分類
+
+`contents.classifyByStatus`を`true`に設定すると、コンテンツは以下のように分類されて保存されます：
+
+- `PUBLISH`: 公開中のコンテンツ
+- `DRAFT`: 下書きのコンテンツ
+- `CLOSED`: 公開終了のコンテンツ
+- `PUBLISH_AND_DRAFT`: 公開中かつ下書きのコンテンツ（両方の状態で保存）
+
+3. `backup`フォルダの中に、ファイルが保存されます。コンテンツはステータスごとのディレクトリに分類されて保存されます。

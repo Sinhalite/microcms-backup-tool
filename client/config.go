@@ -7,7 +7,7 @@ import (
 
 func (c *Client) LoadConfig() error {
 	// デフォルト値を設定
-	c.Config.RequestUnit = 10
+	c.Config.Contents.RequestUnit = 10
 
 	f, err := os.Open("config.json")
 	if err != nil {

@@ -8,25 +8,27 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/tidwall/gjson"
 )
 
 func (c Client) BackupContents(baseDir string) error {
 	log.Println("コンテンツのバックアップを開始します")
 
-	for _, endpoint := range c.Config.Endpoints {
+	for _, endpoint := range c.Config.Contents.Endpoints {
 		log.Printf("%sのバックアップを開始します\n", endpoint)
 
 		// 1:ステータスごとの分類を行う場合
-		if c.Config.ClassifyByStatus {
+		if c.Config.Contents.ClassifyByStatus {
 			fmt.Println("コンテンツの処理を開始しました")
 			// 全コンテンツの合計件数を取得
-			allCotentsCount, err := c.getContentsTotalCount(endpoint, c.Config.GetAllStatusContentsAPIKey)
+			allCotentsCount, err := c.getContentsTotalCount(endpoint, c.Config.Contents.GetAllStatusContentsAPIKey)
 			if err != nil {
 				return fmt.Errorf("全コンテンツの合計件数の取得でエラーが発生しました: %w", err)
 			}
 
 			// 必要なリクエスト回数を計算
-			requiredRequestCount := (allCotentsCount/c.Config.RequestUnit + 1)
+			requiredRequestCount := (allCotentsCount/c.Config.Contents.RequestUnit + 1)
 
 			// 全コンテンツの取得した後、ステータスごとにデータを振り分けて保存する
 			err = c.saveContentsWithStatus(endpoint, requiredRequestCount, baseDir)
@@ -35,13 +37,13 @@ func (c Client) BackupContents(baseDir string) error {
 			}
 		} else {
 			// 2:ステータスごとの分類を行わない場合
-			totalCount, err := c.getContentsTotalCount(endpoint, c.Config.GetPublishContentsAPIKey)
+			totalCount, err := c.getContentsTotalCount(endpoint, c.Config.Contents.GetPublishContentsAPIKey)
 			if err != nil {
 				return fmt.Errorf("コンテンツの合計件数の取得でエラーが発生しました: %w", err)
 			}
-			requiredRequestCount := (totalCount/c.Config.RequestUnit + 1)
+			requiredRequestCount := (totalCount/c.Config.Contents.RequestUnit + 1)
 
-			err = c.saveContents(endpoint, requiredRequestCount, baseDir, c.Config.GetPublishContentsAPIKey, "PUBLISH")
+			err = c.saveContents(endpoint, requiredRequestCount, baseDir, c.Config.Contents.GetPublishContentsAPIKey, "PUBLISH")
 			if err != nil {
 				return fmt.Errorf("コンテンツの保存でエラーが発生しました: %w", err)
 			}
@@ -83,43 +85,10 @@ func (c Client) getContentsTotalCount(endpoint string, apiKey string) (int, erro
 	return response.TotalCount, err
 }
 
-func (c Client) getContent(endpoint string, apiKey string, contentId string) (map[string]interface{}, error) {
-	req, _ := http.NewRequest(
-		"GET",
-		fmt.Sprintf("https://%s.microcms.io/api/v1/%s/%s", c.Config.ServiceID, endpoint, contentId),
-		nil)
-	req.Header.Set("X-MICROCMS-API-KEY", apiKey)
-
-	client := new(http.Client)
-	resp, err := client.Do(req)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("ステータスコード:%d 正常にレスポンスを取得できませんでした", resp.StatusCode)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	response := &map[string]interface{}{}
-	err = json.Unmarshal(body, response)
-	if err != nil {
-		return nil, err
-	}
-
-	return *response, err
-}
-
 func (c Client) saveContents(endpoint string, requiredRequestCount int, baseDir string, apiKey string, status string) error {
 	for i := 0; i < requiredRequestCount; i++ {
 		client := new(http.Client)
-		requestURL := fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=%d&offset=%d", c.Config.ServiceID, endpoint, c.Config.RequestUnit, c.Config.RequestUnit*i)
+		requestURL := fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=%d&offset=%d", c.Config.ServiceID, endpoint, c.Config.Contents.RequestUnit, c.Config.Contents.RequestUnit*i)
 		req, _ := http.NewRequest("GET", requestURL, nil)
 		req.Header.Set("X-MICROCMS-API-KEY", apiKey)
 		resp, err := client.Do(req)
@@ -132,10 +101,17 @@ func (c Client) saveContents(endpoint string, requiredRequestCount int, baseDir 
 		defer resp.Body.Close()
 
 		// JSONのフォーマット
-		json, err := formatJson(resp)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}
+
+		var prettyJSON bytes.Buffer
+		err = json.Indent(&prettyJSON, body, "", "  ")
+		if err != nil {
+			return err
+		}
+		formattedJSON := prettyJSON.String()
 
 		// 保存用ディレクトリの作成
 		dir, err := makeSaveDir(baseDir, endpoint, status, "")
@@ -148,7 +124,7 @@ func (c Client) saveContents(endpoint string, requiredRequestCount int, baseDir 
 			return err
 		}
 
-		_, err = f.WriteString(json)
+		_, err = f.WriteString(formattedJSON)
 		if err != nil {
 			return err
 		}
@@ -166,9 +142,9 @@ func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int
 	for i := 0; i < requiredRequestCount; i++ {
 		// コンテンツAPIから取得
 		client := new(http.Client)
-		requestURL := fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=%d&offset=%d", c.Config.ServiceID, endpoint, c.Config.RequestUnit, c.Config.RequestUnit*i)
+		requestURL := fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=%d&offset=%d", c.Config.ServiceID, endpoint, c.Config.Contents.RequestUnit, c.Config.Contents.RequestUnit*i)
 		req, _ := http.NewRequest("GET", requestURL, nil)
-		req.Header.Set("X-MICROCMS-API-KEY", c.Config.GetAllStatusContentsAPIKey)
+		req.Header.Set("X-MICROCMS-API-KEY", c.Config.Contents.GetAllStatusContentsAPIKey)
 		resp, err := client.Do(req)
 		if err != nil {
 			return err
@@ -179,9 +155,9 @@ func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int
 		defer resp.Body.Close()
 
 		// マネジメントAPIから取得
-		mRequestURL := fmt.Sprintf("https://%s.microcms-management.io/api/v1/contents/%s?limit=%d&offset=%d", c.Config.ServiceID, endpoint, c.Config.RequestUnit, c.Config.RequestUnit*i)
+		mRequestURL := fmt.Sprintf("https://%s.microcms-management.io/api/v1/contents/%s?limit=%d&offset=%d", c.Config.ServiceID, endpoint, c.Config.Contents.RequestUnit, c.Config.Contents.RequestUnit*i)
 		mReq, _ := http.NewRequest("GET", mRequestURL, nil)
-		mReq.Header.Set("X-MICROCMS-API-KEY", c.Config.GetContentsMetaDataAPIKey)
+		mReq.Header.Set("X-MICROCMS-API-KEY", c.Config.Contents.GetContentsMetaDataAPIKey)
 		mResp, err := client.Do(mReq)
 		if err != nil {
 			return err
@@ -197,58 +173,47 @@ func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int
 			log.Fatalf("Failed to read response body: %v", err)
 		}
 
-		// JSONをデコードする
-		var data map[string]interface{}
-		if err := json.Unmarshal(body, &data); err != nil {
-			log.Fatalf("Failed to unmarshal JSON: %v", err)
-		}
-
-		// レスポンスボディを読み込む
 		mbody, err := io.ReadAll(mResp.Body)
 		if err != nil {
 			log.Fatalf("Failed to read response body: %v", err)
 		}
 
-		// JSONをデコードする
-		var mdata map[string]interface{}
-		if err := json.Unmarshal(mbody, &mdata); err != nil {
-			log.Fatalf("Failed to unmarshal JSON: %v", err)
+		// gjsonでcontents配列を取得
+		contents := gjson.GetBytes(body, "contents")
+		mContents := gjson.GetBytes(mbody, "contents")
+
+		if !contents.IsArray() || !mContents.IsArray() {
+			return fmt.Errorf("contentsが配列ではありません")
 		}
 
-		// 振り分け処理
-		contents := data["contents"].([]interface{})
-		mContents := mdata["contents"].([]interface{})
+		for j := 0; j < len(contents.Array()); j++ {
+			item := contents.Array()[j]
+			mItem := mContents.Array()[j]
 
-		for j, content := range contents {
-			item := content.(map[string]interface{})
-			id := item["id"].(string)
-			mid := mContents[j].(map[string]interface{})["id"].(string)
-
+			id := item.Get("id").String()
+			mid := mItem.Get("id").String()
 			if id != mid {
 				return fmt.Errorf("コンテンツIDが一致しませんでした:%s,%s", id, mid)
 			}
 
-			status := mContents[j].(map[string]interface{})["status"].([]interface{})[0].(string)
-
-			number := i*c.Config.RequestUnit + j + 1
+			status := mItem.Get("status.0").String()
+			number := i*c.Config.Contents.RequestUnit + j + 1
 
 			fmt.Println(number, status)
 
 			switch status {
 			case "PUBLISH", "DRAFT", "CLOSED":
-				c.writeContentsWithStatus(item, baseDir, endpoint, number, status, "")
+				// item.Rawで元の順序のままJSON文字列が得られる
+				c.writeRawJSONWithStatus(item.Raw, baseDir, endpoint, number, status, "")
 			case "PUBLISH_AND_DRAFT":
-				// 公開中かつ下書き中の時は、公開中のデータと下書きのデータをそれぞれ保存する
-				// 1:下書きのデータを保存
-				c.writeContentsWithStatus(item, baseDir, endpoint, number, "DRAFT", "PUBLISH_AND_DRAFT")
-
-				// 2:公開中のデータを取得、保存
-				// 公開中のデータを取得するたびに、「下書き全取得」が付与されていないAPIキーを利用する
-				publishItem, err := c.getContent(endpoint, c.Config.GetPublishContentsAPIKey, id)
+				// 下書き保存
+				c.writeRawJSONWithStatus(item.Raw, baseDir, endpoint, number, "DRAFT", "PUBLISH_AND_DRAFT")
+				// 公開中データ取得
+				publishItem, err := c.getContentWithGJSON(endpoint, c.Config.Contents.GetPublishContentsAPIKey, id)
 				if err != nil {
 					log.Fatalf("公開中かつ下書き中コンテンツにおいて、公開中のコンテンツの取得に失敗しました: %v", err)
 				}
-				c.writeContentsWithStatus(publishItem, baseDir, endpoint, number, "PUBLISH", "")
+				c.writeRawJSONWithStatus(publishItem.Raw, baseDir, endpoint, number, "PUBLISH", "")
 			default:
 				fmt.Println("未知のステータスです")
 			}
@@ -257,39 +222,54 @@ func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int
 	return nil
 }
 
-func (c Client) writeContentsWithStatus(item map[string]interface{}, baseDir string, endpoint string, number int, status string, draftStatusDetail string) error {
-	jsonData, err := json.MarshalIndent(item, "", "  ")
+// itemRawはJSON文字列
+func (c Client) writeRawJSONWithStatus(itemRaw string, baseDir, endpoint string, number int, status, draftStatusDetail string) error {
+	// JSONを整形
+	formattedJson, err := formatJson(itemRaw)
 	if err != nil {
-		log.Fatalf("Failed to marshal JSON: %v", err)
+		return err
 	}
 
 	dir, err := makeSaveDir(baseDir, endpoint, status, draftStatusDetail)
 	if err != nil {
 		return err
 	}
-
 	f, err := os.Create(fmt.Sprintf("%s/%d.json", dir, number))
 	if err != nil {
 		return err
 	}
-
-	_, err = f.Write(jsonData)
-	if err != nil {
-		return err
-	}
-
 	defer f.Close()
-	return nil
+	_, err = f.WriteString(formattedJson)
+	return err
 }
 
-func formatJson(resp *http.Response) (string, error) {
+// 公開中データ取得用
+func (c Client) getContentWithGJSON(endpoint, apiKey, contentId string) (gjson.Result, error) {
+	req, _ := http.NewRequest(
+		"GET",
+		fmt.Sprintf("https://%s.microcms.io/api/v1/%s/%s", c.Config.ServiceID, endpoint, contentId),
+		nil)
+	req.Header.Set("X-MICROCMS-API-KEY", apiKey)
+
+	client := new(http.Client)
+	resp, err := client.Do(req)
+	if err != nil {
+		return gjson.Result{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return gjson.Result{}, fmt.Errorf("ステータスコード:%d 正常にレスポンスを取得できませんでした", resp.StatusCode)
+	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return gjson.Result{}, err
 	}
+	return gjson.ParseBytes(body), nil
+}
 
+func formatJson(rawJson string) (string, error) {
 	var buf bytes.Buffer
-	err = json.Indent(&buf, []byte(body), "", "  ")
+	err := json.Indent(&buf, []byte(rawJson), "", "  ")
 	return buf.String(), err
 }
 
