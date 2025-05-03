@@ -14,7 +14,7 @@ import (
 
 func (c Client) BackupMedia(baseDir string) error {
 	log.Println("メディアのバックアップを開始します")
-	const requestUnit = 50
+	const requestUnit = 100
 	totalCount, err := c.getTotalCount()
 	if err != nil {
 		return fmt.Errorf("合計件数の取得でエラーが発生しました: %w", err)
@@ -33,10 +33,8 @@ func (c Client) BackupMedia(baseDir string) error {
 }
 
 func (c Client) getTotalCount() (int, error) {
-	req, _ := http.NewRequest(
-		"GET",
-		fmt.Sprintf("https://%s.microcms-management.io/api/v2/media?limit=0", c.Config.ServiceID),
-		nil)
+	url := fmt.Sprintf("https://%s.microcms-management.io/api/v2/media?limit=0", c.Config.ServiceID)
+	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("X-MICROCMS-API-KEY", c.Config.Media.APIKey)
 
 	client := new(http.Client)
@@ -72,7 +70,7 @@ func (c Client) getAllMedia(requiredRequestCount int, requestUnit int) ([]Media,
 	for i := 0; i < requiredRequestCount; i++ {
 		// 1秒のディレイを追加
 		if i > 0 {
-			time.Sleep(1 * time.Second)
+			time.Sleep(3 * time.Second)
 		}
 
 		client := new(http.Client)
@@ -111,11 +109,6 @@ func (c Client) getAllMedia(requiredRequestCount int, requestUnit int) ([]Media,
 
 func (c Client) saveMedia(medias []Media, totalCount int, baseDir string) error {
 	for i, media := range medias {
-		// 1秒のディレイを追加
-		if i > 0 {
-			time.Sleep(1 * time.Second)
-		}
-
 		// 進捗状況の表示
 		fmt.Printf("[%d / %d] %s\n", i+1, totalCount, media.Url)
 

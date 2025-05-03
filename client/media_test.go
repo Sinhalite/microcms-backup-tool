@@ -1,7 +1,9 @@
 package client
 
 import (
+	"fmt"
 	"testing"
+	"time"
 )
 
 func TestBackupMedia(t *testing.T) {
@@ -46,10 +48,15 @@ func TestBackupMedia(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			time.Sleep(5 * time.Second)
+
 			client := Client{}
 			client.Config = tt.args.config
 
 			err := client.BackupMedia(tt.args.baseDir)
+			if err != nil {
+				fmt.Println(err)
+			}
 			got := err == nil
 			if got != tt.want {
 				t.Errorf("backupMedia() = %v, want %v", got, tt.want)

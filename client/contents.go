@@ -257,7 +257,7 @@ func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int
 	for i := 0; i < requiredRequestCount; i++ {
 		// 1秒のディレイを追加
 		if i > 0 {
-			time.Sleep(1 * time.Second)
+			time.Sleep(2 * time.Second)
 		}
 
 		// コンテンツAPIから取得
@@ -283,19 +283,19 @@ func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int
 			return err
 		}
 		if mResp.StatusCode != http.StatusOK {
-			return fmt.Errorf("ステータスコード:%d 正常にレスポンスを取得できませんでした", resp.StatusCode)
+			return fmt.Errorf("ステータスコード:%d 正常にレスポンスを取得できませんでした", mResp.StatusCode)
 		}
 		defer mResp.Body.Close()
 
 		// レスポンスボディを読み込む
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			log.Fatalf("Failed to read response body: %v", err)
+			return err
 		}
 
 		mbody, err := io.ReadAll(mResp.Body)
 		if err != nil {
-			log.Fatalf("Failed to read response body: %v", err)
+			return err
 		}
 
 		// gjsonでcontents配列を取得
@@ -375,12 +375,12 @@ func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int
 		// レスポンスボディを読み込む
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			log.Fatalf("Failed to read response body: %v", err)
+			return err
 		}
 
 		mbody, err := io.ReadAll(mResp.Body)
 		if err != nil {
-			log.Fatalf("Failed to read response body: %v", err)
+			return err
 		}
 
 		// gjsonでcontents配列を取得
@@ -409,6 +409,8 @@ func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int
 			case "PUBLISH_AND_DRAFT":
 				// 下書き保存
 				statusContents["DRAFT"] = append(statusContents["DRAFT"], item)
+				// 1秒のディレイを追加
+				time.Sleep(1 * time.Second)
 				// 公開中データ取得
 				publishItem, err := c.getContentWithGJSON(endpoint, c.Config.Contents.GetPublishContentsAPIKey, id)
 				if err != nil {
@@ -499,10 +501,8 @@ func (c Client) writeRawJSONWithStatus(itemRaw string, baseDir, endpoint string,
 
 // 公開中データ取得用
 func (c Client) getContentWithGJSON(endpoint, apiKey, contentId string) (gjson.Result, error) {
-	req, _ := http.NewRequest(
-		"GET",
-		fmt.Sprintf("https://%s.microcms.io/api/v1/%s/%s", c.Config.ServiceID, endpoint, contentId),
-		nil)
+	url := fmt.Sprintf("https://%s.microcms.io/api/v1/%s/%s", c.Config.ServiceID, endpoint, contentId)
+	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("X-MICROCMS-API-KEY", apiKey)
 
 	client := new(http.Client)
