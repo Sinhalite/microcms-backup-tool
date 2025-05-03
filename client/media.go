@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 )
 
 func (c Client) BackupMedia(baseDir string) error {
@@ -69,6 +70,11 @@ func (c Client) getAllMedia(requiredRequestCount int, requestUnit int) ([]Media,
 	var token string
 
 	for i := 0; i < requiredRequestCount; i++ {
+		// 1秒のディレイを追加
+		if i > 0 {
+			time.Sleep(1 * time.Second)
+		}
+
 		client := new(http.Client)
 		req, _ := http.NewRequest(
 			"GET",
@@ -105,6 +111,11 @@ func (c Client) getAllMedia(requiredRequestCount int, requestUnit int) ([]Media,
 
 func (c Client) saveMedia(medias []Media, totalCount int, baseDir string) error {
 	for i, media := range medias {
+		// 1秒のディレイを追加
+		if i > 0 {
+			time.Sleep(1 * time.Second)
+		}
+
 		// 進捗状況の表示
 		fmt.Printf("[%d / %d] %s\n", i+1, totalCount, media.Url)
 

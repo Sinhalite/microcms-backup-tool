@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/tidwall/gjson"
 )
@@ -94,6 +95,11 @@ func (c Client) saveContents(endpoint string, requiredRequestCount int, baseDir 
 
 	// 従来のJSONファイルとして保存する場合
 	for i := 0; i < requiredRequestCount; i++ {
+		// 1秒のディレイを追加
+		if i > 0 {
+			time.Sleep(1 * time.Second)
+		}
+
 		client := new(http.Client)
 		requestURL := fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=%d&offset=%d", c.Config.ServiceID, endpoint, c.Config.Contents.RequestUnit, c.Config.Contents.RequestUnit*i)
 		req, _ := http.NewRequest("GET", requestURL, nil)
@@ -249,6 +255,11 @@ func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int
 
 	// まずすべてのコンテンツを取得して、存在するすべてのキーを収集
 	for i := 0; i < requiredRequestCount; i++ {
+		// 1秒のディレイを追加
+		if i > 0 {
+			time.Sleep(1 * time.Second)
+		}
+
 		// コンテンツAPIから取得
 		client := new(http.Client)
 		requestURL := fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=%d&offset=%d", c.Config.ServiceID, endpoint, c.Config.Contents.RequestUnit, c.Config.Contents.RequestUnit*i)
@@ -329,6 +340,11 @@ func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int
 	// ステータスごとにコンテンツを分類
 	statusContents := make(map[string][]gjson.Result)
 	for i := 0; i < requiredRequestCount; i++ {
+		// 1秒のディレイを追加
+		if i > 0 {
+			time.Sleep(1 * time.Second)
+		}
+
 		// コンテンツAPIから取得
 		client := new(http.Client)
 		requestURL := fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=%d&offset=%d", c.Config.ServiceID, endpoint, c.Config.Contents.RequestUnit, c.Config.Contents.RequestUnit*i)
@@ -352,7 +368,7 @@ func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int
 			return err
 		}
 		if mResp.StatusCode != http.StatusOK {
-			return fmt.Errorf("ステータスコード:%d 正常にレスポンスを取得できませんでした", resp.StatusCode)
+			return fmt.Errorf("ステータスコード:%d 正常にレスポンスを取得できませんでした", mResp.StatusCode)
 		}
 		defer mResp.Body.Close()
 
@@ -413,36 +429,46 @@ func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int
 			return err
 		}
 
-		// CSVファイルを作成
-		csvFile, err := os.Create(fmt.Sprintf("%s/contents.csv", dir))
-		if err != nil {
-			return err
-		}
-		defer csvFile.Close()
+		if c.Config.Contents.SaveAsCSV {
+			// CSVファイルを作成
+			csvFile, err := os.Create(fmt.Sprintf("%s/contents.csv", dir))
+			if err != nil {
+				return err
+			}
+			defer csvFile.Close()
 
-		// CSVライターを作成
-		writer := csv.NewWriter(csvFile)
-		defer writer.Flush()
+			// CSVライターを作成
+			writer := csv.NewWriter(csvFile)
+			defer writer.Flush()
 
-		// ヘッダー行を書き込む
-		if err := writer.Write(orderedKeys); err != nil {
-			return err
-		}
+			// ヘッダー行を書き込む
+			if err := writer.Write(orderedKeys); err != nil {
+				return err
+			}
 
-		// 各コンテンツのデータを書き込む
-		for _, item := range contents {
-			row := make([]string, len(orderedKeys))
-			for i, key := range orderedKeys {
-				value := item.Get(key)
-				// 値がオブジェクトや配列の場合はJSON文字列として保存
-				if value.IsObject() || value.IsArray() {
-					row[i] = value.Raw
-				} else {
-					row[i] = value.String()
+			// 各コンテンツのデータを書き込む
+			for _, item := range contents {
+				row := make([]string, len(orderedKeys))
+				for i, key := range orderedKeys {
+					value := item.Get(key)
+					// 値がオブジェクトや配列の場合はJSON文字列として保存
+					if value.IsObject() || value.IsArray() {
+						row[i] = value.Raw
+					} else {
+						row[i] = value.String()
+					}
+				}
+				if err := writer.Write(row); err != nil {
+					return err
 				}
 			}
-			if err := writer.Write(row); err != nil {
-				return err
+		} else {
+			// JSONファイルとして保存
+			for i, item := range contents {
+				err := c.writeRawJSONWithStatus(item.Raw, baseDir, endpoint, i+1, status, "")
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}

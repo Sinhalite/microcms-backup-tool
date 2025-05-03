@@ -20,6 +20,7 @@ func main() {
 
 	err = client.StartBackup(baseDir)
 	if err != nil {
+		log.Printf("バックアップに失敗しました: %v", err)
 		log.Fatal("正常にバックアップを処理できませんでした")
 	}
 }
