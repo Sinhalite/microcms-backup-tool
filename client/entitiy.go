@@ -28,12 +28,15 @@ type Media struct {
 type ContentsConfig struct {
 	// 公開コンテンツを取得するためのAPIキー（classifyByStatusがfalseの場合はこれのみ必要）
 	GetPublishContentsAPIKey string `json:"getPublishContentsAPIKey"`
-	// 以下のフィールドはclassifyByStatusがtrueの場合のみ必要
-	GetAllStatusContentsAPIKey string   `json:"getAllStatusContentsAPIKey,omitempty"`
-	GetContentsMetaDataAPIKey  string   `json:"getContentsMetaDataAPIKey,omitempty"`
-	Endpoints                  []string `json:"endpoints"`
-	RequestUnit                int      `json:"requestUnit"`
-	ClassifyByStatus           bool     `json:"classifyByStatus"`
+	// 全ステータスのコンテンツを取得するためのAPIキー（classifyByStatusがtrueの場合に必要）
+	GetAllStatusContentsAPIKey string `json:"getAllStatusContentsAPIKey,omitempty"`
+	// コンテンツのメタデータを取得するためのAPIキー（classifyByStatusがtrueの場合に必要）
+	GetContentsMetaDataAPIKey string   `json:"getContentsMetaDataAPIKey,omitempty"`
+	Endpoints                 []string `json:"endpoints"`
+	RequestUnit               int      `json:"requestUnit"`
+	ClassifyByStatus          bool     `json:"classifyByStatus"`
+	// CSVファイルとして保存するかどうか
+	SaveAsCSV bool `json:"saveAsCSV"`
 }
 
 // MediaConfig はメディアバックアップの設定を保持する構造体

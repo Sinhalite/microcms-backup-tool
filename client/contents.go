@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -86,6 +87,12 @@ func (c Client) getContentsTotalCount(endpoint string, apiKey string) (int, erro
 }
 
 func (c Client) saveContents(endpoint string, requiredRequestCount int, baseDir string, apiKey string, status string) error {
+	// CSVファイルとして保存する場合
+	if c.Config.Contents.SaveAsCSV {
+		return c.saveContentsAsCSV(endpoint, requiredRequestCount, baseDir, apiKey, status)
+	}
+
+	// 従来のJSONファイルとして保存する場合
 	for i := 0; i < requiredRequestCount; i++ {
 		client := new(http.Client)
 		requestURL := fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=%d&offset=%d", c.Config.ServiceID, endpoint, c.Config.Contents.RequestUnit, c.Config.Contents.RequestUnit*i)
@@ -128,7 +135,199 @@ func (c Client) saveContents(endpoint string, requiredRequestCount int, baseDir 
 	return nil
 }
 
+// saveContentsAsCSV はコンテンツをCSVファイルとして保存する関数
+func (c Client) saveContentsAsCSV(endpoint string, requiredRequestCount int, baseDir string, apiKey string, status string) error {
+	// 保存先ディレクトリを作成
+	dir, err := makeSaveDir(baseDir, endpoint, status, "")
+	if err != nil {
+		return err
+	}
+
+	// CSVファイルを作成
+	csvFile, err := os.Create(fmt.Sprintf("%s/contents.csv", dir))
+	if err != nil {
+		return err
+	}
+	defer csvFile.Close()
+
+	// CSVライターを作成
+	writer := csv.NewWriter(csvFile)
+	defer writer.Flush()
+
+	// すべてのコンテンツで共通のカラムを収集
+	allKeys := make(map[string]bool)
+	var allContents []gjson.Result
+	var orderedKeys []string
+
+	// まずすべてのコンテンツを取得して、存在するすべてのキーを収集
+	for i := 0; i < requiredRequestCount; i++ {
+		client := new(http.Client)
+		requestURL := fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=%d&offset=%d", c.Config.ServiceID, endpoint, c.Config.Contents.RequestUnit, c.Config.Contents.RequestUnit*i)
+		req, _ := http.NewRequest("GET", requestURL, nil)
+		req.Header.Set("X-MICROCMS-API-KEY", apiKey)
+		resp, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("ステータスコード:%d 正常にレスポンスを取得できませんでした", resp.StatusCode)
+		}
+		defer resp.Body.Close()
+
+		// レスポンスボディを読み込む
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		// gjsonでcontents配列を取得
+		contents := gjson.GetBytes(body, "contents")
+		if !contents.IsArray() {
+			return fmt.Errorf("contentsが配列ではありません")
+		}
+
+		// 各コンテンツのキーを収集
+		for _, item := range contents.Array() {
+			allContents = append(allContents, item)
+			// 最初のコンテンツからキーの順序を取得
+			if len(orderedKeys) == 0 {
+				item.ForEach(func(key, value gjson.Result) bool {
+					keyStr := key.String()
+					if !allKeys[keyStr] {
+						orderedKeys = append(orderedKeys, keyStr)
+						allKeys[keyStr] = true
+					}
+					return true
+				})
+			} else {
+				// 2つ目以降のコンテンツでは、新しいキーのみを追加
+				item.ForEach(func(key, value gjson.Result) bool {
+					keyStr := key.String()
+					if !allKeys[keyStr] {
+						orderedKeys = append(orderedKeys, keyStr)
+						allKeys[keyStr] = true
+					}
+					return true
+				})
+			}
+		}
+
+		// 進捗状況の表示
+		fmt.Printf("[%d / %d] %s\n", i+1, requiredRequestCount, requestURL)
+	}
+
+	// ヘッダー行を書き込む
+	if err := writer.Write(orderedKeys); err != nil {
+		return err
+	}
+
+	// 各コンテンツのデータを書き込む
+	for _, item := range allContents {
+		row := make([]string, len(orderedKeys))
+		for i, key := range orderedKeys {
+			value := item.Get(key)
+			// 値がオブジェクトや配列の場合はJSON文字列として保存
+			if value.IsObject() || value.IsArray() {
+				row[i] = value.Raw
+			} else {
+				row[i] = value.String()
+			}
+		}
+		if err := writer.Write(row); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int, baseDir string) error {
+	// すべてのコンテンツで共通のカラムを収集
+	allKeys := make(map[string]bool)
+	var allContents []gjson.Result
+	var orderedKeys []string
+
+	// まずすべてのコンテンツを取得して、存在するすべてのキーを収集
+	for i := 0; i < requiredRequestCount; i++ {
+		// コンテンツAPIから取得
+		client := new(http.Client)
+		requestURL := fmt.Sprintf("https://%s.microcms.io/api/v1/%s?limit=%d&offset=%d", c.Config.ServiceID, endpoint, c.Config.Contents.RequestUnit, c.Config.Contents.RequestUnit*i)
+		req, _ := http.NewRequest("GET", requestURL, nil)
+		req.Header.Set("X-MICROCMS-API-KEY", c.Config.Contents.GetAllStatusContentsAPIKey)
+		resp, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("ステータスコード:%d 正常にレスポンスを取得できませんでした", resp.StatusCode)
+		}
+		defer resp.Body.Close()
+
+		// マネジメントAPIから取得
+		mRequestURL := fmt.Sprintf("https://%s.microcms-management.io/api/v1/contents/%s?limit=%d&offset=%d", c.Config.ServiceID, endpoint, c.Config.Contents.RequestUnit, c.Config.Contents.RequestUnit*i)
+		mReq, _ := http.NewRequest("GET", mRequestURL, nil)
+		mReq.Header.Set("X-MICROCMS-API-KEY", c.Config.Contents.GetContentsMetaDataAPIKey)
+		mResp, err := client.Do(mReq)
+		if err != nil {
+			return err
+		}
+		if mResp.StatusCode != http.StatusOK {
+			return fmt.Errorf("ステータスコード:%d 正常にレスポンスを取得できませんでした", resp.StatusCode)
+		}
+		defer mResp.Body.Close()
+
+		// レスポンスボディを読み込む
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalf("Failed to read response body: %v", err)
+		}
+
+		mbody, err := io.ReadAll(mResp.Body)
+		if err != nil {
+			log.Fatalf("Failed to read response body: %v", err)
+		}
+
+		// gjsonでcontents配列を取得
+		contents := gjson.GetBytes(body, "contents")
+		mContents := gjson.GetBytes(mbody, "contents")
+
+		if !contents.IsArray() || !mContents.IsArray() {
+			return fmt.Errorf("contentsが配列ではありません")
+		}
+
+		// 各コンテンツのキーを収集
+		for j := 0; j < len(contents.Array()); j++ {
+			item := contents.Array()[j]
+			allContents = append(allContents, item)
+			// 最初のコンテンツからキーの順序を取得
+			if len(orderedKeys) == 0 {
+				item.ForEach(func(key, value gjson.Result) bool {
+					keyStr := key.String()
+					if !allKeys[keyStr] {
+						orderedKeys = append(orderedKeys, keyStr)
+						allKeys[keyStr] = true
+					}
+					return true
+				})
+			} else {
+				// 2つ目以降のコンテンツでは、新しいキーのみを追加
+				item.ForEach(func(key, value gjson.Result) bool {
+					keyStr := key.String()
+					if !allKeys[keyStr] {
+						orderedKeys = append(orderedKeys, keyStr)
+						allKeys[keyStr] = true
+					}
+					return true
+				})
+			}
+		}
+
+		// 進捗状況の表示
+		fmt.Printf("[%d / %d] %s\n", i+1, requiredRequestCount, requestURL)
+	}
+
+	// ステータスごとにコンテンツを分類
+	statusContents := make(map[string][]gjson.Result)
 	for i := 0; i < requiredRequestCount; i++ {
 		// コンテンツAPIから取得
 		client := new(http.Client)
@@ -187,28 +386,67 @@ func (c Client) saveContentsWithStatus(endpoint string, requiredRequestCount int
 			}
 
 			status := mItem.Get("status.0").String()
-			number := i*c.Config.Contents.RequestUnit + j + 1
-
-			fmt.Println(number, status)
 
 			switch status {
 			case "PUBLISH", "DRAFT", "CLOSED":
-				// item.Rawで元の順序のままJSON文字列が得られる
-				c.writeRawJSONWithStatus(item.Raw, baseDir, endpoint, number, status, "")
+				statusContents[status] = append(statusContents[status], item)
 			case "PUBLISH_AND_DRAFT":
 				// 下書き保存
-				c.writeRawJSONWithStatus(item.Raw, baseDir, endpoint, number, "DRAFT", "PUBLISH_AND_DRAFT")
+				statusContents["DRAFT"] = append(statusContents["DRAFT"], item)
 				// 公開中データ取得
 				publishItem, err := c.getContentWithGJSON(endpoint, c.Config.Contents.GetPublishContentsAPIKey, id)
 				if err != nil {
 					log.Fatalf("公開中かつ下書き中コンテンツにおいて、公開中のコンテンツの取得に失敗しました: %v", err)
 				}
-				c.writeRawJSONWithStatus(publishItem.Raw, baseDir, endpoint, number, "PUBLISH", "")
+				statusContents["PUBLISH"] = append(statusContents["PUBLISH"], publishItem)
 			default:
 				fmt.Println("未知のステータスです")
 			}
 		}
 	}
+
+	// 各ステータスごとにCSVファイルを作成
+	for status, contents := range statusContents {
+		// 保存先ディレクトリを作成
+		dir, err := makeSaveDir(baseDir, endpoint, status, "")
+		if err != nil {
+			return err
+		}
+
+		// CSVファイルを作成
+		csvFile, err := os.Create(fmt.Sprintf("%s/contents.csv", dir))
+		if err != nil {
+			return err
+		}
+		defer csvFile.Close()
+
+		// CSVライターを作成
+		writer := csv.NewWriter(csvFile)
+		defer writer.Flush()
+
+		// ヘッダー行を書き込む
+		if err := writer.Write(orderedKeys); err != nil {
+			return err
+		}
+
+		// 各コンテンツのデータを書き込む
+		for _, item := range contents {
+			row := make([]string, len(orderedKeys))
+			for i, key := range orderedKeys {
+				value := item.Get(key)
+				// 値がオブジェクトや配列の場合はJSON文字列として保存
+				if value.IsObject() || value.IsArray() {
+					row[i] = value.Raw
+				} else {
+					row[i] = value.String()
+				}
+			}
+			if err := writer.Write(row); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 

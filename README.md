@@ -31,7 +31,8 @@ microCMS で管理しているコンテンツとメディア(画像・ファイ�
     "classifyByStatus": true,
     "getPublishContentsAPIKey": "xxxxxxxxxxxxxxxxxxxxxxxx",
     "getAllStatusContentsAPIKey": "xxxxxxxxxxxxxxxxxxxxxxxx",
-    "getContentsMetaDataAPIKey": "xxxxxxxxxxxxxxxxxxxxxxxx"
+    "getContentsMetaDataAPIKey": "xxxxxxxxxxxxxxxxxxxxxxxx",
+    "saveAsCSV": false
   },
   "media": {
     "getMediaAPIKey": "xxxxxxxxxxxxxxxxxxxxxxxx"
@@ -64,6 +65,22 @@ microCMS で管理しているコンテンツとメディア(画像・ファイ�
 `media.getMediaAPIKey`
 - メディアのGET権限を付与してください
 - メディアファイルの取得に使用
+
+#### コンテンツの保存形式
+
+`contents.classifyByStatus`と`contents.saveAsCSV`の組み合わせにより、コンテンツの保存形式が決定されます：
+
+1. `classifyByStatus: true`の場合：
+   - コンテンツはステータスごとに分類されて保存されます
+   - 各コンテンツは個別のJSONファイルとして保存されます
+
+2. `classifyByStatus: false`の場合：
+   - `saveAsCSV: false`（デフォルト）：
+     - コンテンツは個別のJSONファイルとして保存されます
+   - `saveAsCSV: true`：
+     - コンテンツは1つのCSVファイルとして保存されます
+     - ネストされたJSONオブジェクトや配列は文字列として保存されます
+     - ファイル名は`contents.csv`となります
 
 #### コンテンツのステータス分類
 
