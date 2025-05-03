@@ -100,36 +100,26 @@ func (c Client) saveContents(endpoint string, requiredRequestCount int, baseDir 
 		}
 		defer resp.Body.Close()
 
-		// JSONのフォーマット
+		// レスポンスボディを読み込む
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}
 
-		var prettyJSON bytes.Buffer
-		err = json.Indent(&prettyJSON, body, "", "  ")
-		if err != nil {
-			return err
-		}
-		formattedJSON := prettyJSON.String()
-
-		// 保存用ディレクトリの作成
-		dir, err := makeSaveDir(baseDir, endpoint, status, "")
-		if err != nil {
-			return err
+		// gjsonでcontents配列を取得
+		contents := gjson.GetBytes(body, "contents")
+		if !contents.IsArray() {
+			return fmt.Errorf("contentsが配列ではありません")
 		}
 
-		f, err := os.Create(fmt.Sprintf("%s/%d.json", dir, i+1))
-		if err != nil {
-			return err
+		for j, item := range contents.Array() {
+			number := i*c.Config.Contents.RequestUnit + j + 1
+			// item.Rawで元の順序のままJSON文字列が得られる
+			err := c.writeRawJSONWithStatus(item.Raw, baseDir, endpoint, number, status, "")
+			if err != nil {
+				return err
+			}
 		}
-
-		_, err = f.WriteString(formattedJSON)
-		if err != nil {
-			return err
-		}
-
-		defer f.Close()
 
 		// 進捗状況の表示
 		fmt.Printf("[%d / %d] %s\n", i+1, requiredRequestCount, requestURL)
