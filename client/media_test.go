@@ -2,14 +2,40 @@ package client
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/joho/godotenv"
 )
+
+func init() {
+	// Get the current working directory
+	wd, err := os.Getwd()
+	if err != nil {
+		panic("Error getting working directory")
+	}
+
+	// Get the project root directory (where go.mod is located)
+	projectRoot := filepath.Dir(wd)
+
+	// Load .env file from the project root
+	envPath := filepath.Join(projectRoot, ".env")
+	if err := godotenv.Load(envPath); err != nil {
+		panic("Error loading .env file: " + envPath)
+	}
+}
 
 func TestBackupMedia(t *testing.T) {
 	type args struct {
 		config  *Config
 		baseDir string
+	}
+
+	mediaAPIKey := os.Getenv("MEDIA_API_KEY")
+	if mediaAPIKey == "" {
+		t.Skip("Media API key not set in environment variable")
 	}
 
 	tests := []struct {
@@ -38,7 +64,7 @@ func TestBackupMedia(t *testing.T) {
 					Target:    "media",
 					ServiceID: "backup-test",
 					Media: MediaConfig{
-						APIKey: "5Nw9AZH3BRRyOZS73ohPksRnn5sI49BMx05C",
+						APIKey: mediaAPIKey,
 					},
 				},
 				baseDir: "../backup/test/",

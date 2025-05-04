@@ -1,9 +1,30 @@
 package client
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/joho/godotenv"
 )
+
+func init() {
+	// Get the current working directory
+	wd, err := os.Getwd()
+	if err != nil {
+		panic("Error getting working directory")
+	}
+
+	// Get the project root directory (where go.mod is located)
+	projectRoot := filepath.Dir(wd)
+
+	// Load .env file from the project root
+	envPath := filepath.Join(projectRoot, ".env")
+	if err := godotenv.Load(envPath); err != nil {
+		panic("Error loading .env file: " + envPath)
+	}
+}
 
 func TestBackupAllTargets(t *testing.T) {
 	type args struct {
@@ -11,12 +32,14 @@ func TestBackupAllTargets(t *testing.T) {
 		baseDir string
 	}
 
-	const (
-		publishAPIKey   = "5Nw9AZH3BRRyOZS73ohPksRnn5sI49BMx05C"
-		allStatusAPIKey = "5Nw9AZH3BRRyOZS73ohPksRnn5sI49BMx05C"
-		metaDataAPIKey  = "5Nw9AZH3BRRyOZS73ohPksRnn5sI49BMx05C"
-		mediaAPIKey     = "5Nw9AZH3BRRyOZS73ohPksRnn5sI49BMx05C"
-	)
+	publishAPIKey := os.Getenv("PUBLISH_API_KEY")
+	allStatusAPIKey := os.Getenv("ALL_STATUS_API_KEY")
+	metaDataAPIKey := os.Getenv("META_DATA_API_KEY")
+	mediaAPIKey := os.Getenv("MEDIA_API_KEY")
+
+	if publishAPIKey == "" || allStatusAPIKey == "" || metaDataAPIKey == "" || mediaAPIKey == "" {
+		t.Skip("API keys not set in environment variables")
+	}
 
 	tests := []struct {
 		name string
