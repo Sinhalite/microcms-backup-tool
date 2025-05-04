@@ -5,11 +5,11 @@ import (
 	"os"
 )
 
-func (c *Client) LoadConfig() error {
+func (c *Client) LoadConfig(configPath string) error {
 	// デフォルト値を設定
 	c.Config.Contents.RequestUnit = 10
 
-	f, err := os.Open("config.json")
+	f, err := os.Open(configPath)
 	if err != nil {
 		return err
 	}
@@ -17,6 +17,8 @@ func (c *Client) LoadConfig() error {
 
 	d := json.NewDecoder(f)
 	d.DisallowUnknownFields()
-	d.Decode(c.Config)
+	if err := d.Decode(c.Config); err != nil {
+		return err
+	}
 	return nil
 }
