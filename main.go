@@ -8,7 +8,7 @@ import (
 
 func main() {
 	client := &client.Client{Config: &client.Config{}}
-	err := client.LoadConfig()
+	err := client.LoadConfig("config.json")
 	if err != nil {
 		log.Fatal("正常にオプションをセットできませんでした")
 	}
