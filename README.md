@@ -66,29 +66,30 @@ microCMS で管理しているコンテンツとメディア(画像・ファイ�
 - メディアのGET権限を付与してください
 - メディアファイルの取得に使用
 
-#### コンテンツの保存形式
+## コンテンツの保存形式
 
-`contents.classifyByStatus`と`contents.saveAsCSV`の組み合わせにより、コンテンツの保存形式が決定されます：
+### 1. ステータス別分類（`classifyByStatus: true`）
 
-1. `classifyByStatus: true`の場合：
-   - コンテンツはステータスごとに分類されて保存されます
-   - 各コンテンツは個別のJSONファイルとして保存されます
+コンテンツはステータスごとに分類されて保存されます。
 
-2. `classifyByStatus: false`の場合：
-   - `saveAsCSV: false`（デフォルト）：
-     - コンテンツは個別のJSONファイルとして保存されます
-   - `saveAsCSV: true`：
-     - コンテンツは1つのCSVファイルとして保存されます
-     - ネストされたJSONオブジェクトや配列は文字列として保存されます
-     - ファイル名は`contents.csv`となります
+#### JSON形式（`saveAsCSV: false`）
+- コンテンツは個別のJSONファイルとして保存されます
 
-#### コンテンツのステータス分類
+#### CSV形式（`saveAsCSV: true`）
+- コンテンツは1つのCSVファイルとして保存されます
+- ネストされたJSONオブジェクトや配列は文字列として保存されます
+- ファイル名は`contents.csv`となります
 
-`contents.classifyByStatus`を`true`に設定すると、コンテンツは以下のように分類されて保存されます：
+### 2. ステータス別分類なし（`classifyByStatus: false`）
 
-- `PUBLISH`: 公開中のコンテンツ
-- `DRAFT`: 下書きのコンテンツ
-- `CLOSED`: 公開終了のコンテンツ
-- `PUBLISH_AND_DRAFT`: 公開中かつ下書きのコンテンツ（両方の状態で保存）
+コンテンツは1つのファイルとして保存されます。
+
+#### JSON形式（`saveAsCSV: false`）
+- コンテンツは個別のJSONファイルとして保存されます
+
+#### CSV形式（`saveAsCSV: true`）
+- コンテンツは1つのCSVファイルとして保存されます
+- ネストされたJSONオブジェクトや配列は文字列として保存されます
+- ファイル名は`contents.csv`となります
 
 3. `backup`フォルダの中に、ファイルが保存されます。コンテンツはステータスごとのディレクトリに分類されて保存されます。
