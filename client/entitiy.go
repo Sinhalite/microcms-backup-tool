@@ -41,8 +41,7 @@ type ContentsConfig struct {
 
 // MediaConfig はメディアバックアップの設定を保持する構造体
 type MediaConfig struct {
-	APIKey      string `json:"apiKey"`
-	RequestUnit int    `json:"requestUnit"`
+	APIKey string `json:"apiKey"`
 }
 
 type Config struct {
