@@ -29,9 +29,9 @@ type ContentsConfig struct {
 	// 公開コンテンツを取得するためのAPIキー（classifyByStatusがfalseの場合はこれのみ必要）
 	GetPublishContentsAPIKey string `json:"getPublishContentsAPIKey"`
 	// 全ステータスのコンテンツを取得するためのAPIキー（classifyByStatusがtrueの場合に必要）
-	GetAllStatusContentsAPIKey string `json:"getAllStatusContentsAPIKey,omitempty"`
+	GetAllStatusContentsAPIKey string `json:"getAllStatusContentsAPIKey"`
 	// コンテンツのメタデータを取得するためのAPIキー（classifyByStatusがtrueの場合に必要）
-	GetContentsMetaDataAPIKey string   `json:"getContentsMetaDataAPIKey,omitempty"`
+	GetContentsMetaDataAPIKey string   `json:"getContentsMetaDataAPIKey"`
 	Endpoints                 []string `json:"endpoints"`
 	RequestUnit               int      `json:"requestUnit"`
 	ClassifyByStatus          bool     `json:"classifyByStatus"`
@@ -47,8 +47,8 @@ type MediaConfig struct {
 type Config struct {
 	Target    string         `json:"target"`
 	ServiceID string         `json:"serviceId"`
-	Contents  ContentsConfig `json:"contents,omitempty"`
-	Media     MediaConfig    `json:"media,omitempty"`
+	Contents  ContentsConfig `json:"contents"`
+	Media     MediaConfig    `json:"media"`
 }
 
 type Client struct {
